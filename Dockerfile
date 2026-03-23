@@ -1,4 +1,4 @@
-FROM node:14.5-alpine as frontend
+FROM node:18-alpine as frontend
 RUN apk --no-cache add curl
 WORKDIR /usr/src/app
 COPY frontend .
