@@ -40,6 +40,8 @@ const (
 	SmtpUsername   = "smtp.username"
 	SmtpPassword   = "smtp.password"
 	SmtpSkipVerify = "false"
+
+	AllowPublicRegistration = "server.allow_public_registration"
 )
 
 var defaults = map[string]interface{}{
@@ -63,6 +65,7 @@ var defaults = map[string]interface{}{
 	SmtpUsername:            "",
 	SmtpPassword:            "",
 	SmtpSkipVerify:          false,
+	AllowPublicRegistration: false,
 }
 
 func InitDefaults() {

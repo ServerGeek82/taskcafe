@@ -22,6 +22,9 @@ func (r *mutationResolver) CreateTeamMember(ctx context.Context, input CreateTea
 		return &CreateTeamMemberPayload{}, err
 	}
 	_, err = r.Repository.CreateTeamMember(ctx, db.CreateTeamMemberParams{TeamID: input.TeamID, UserID: input.UserID, Addeddate: addedDate, RoleCode: RoleCodeMember.String()})
+	if err != nil {
+		return &CreateTeamMemberPayload{}, err
+	}
 	user, err := r.Repository.GetUserAccountByID(ctx, input.UserID)
 	if err != nil {
 		return &CreateTeamMemberPayload{}, err
@@ -101,12 +104,17 @@ func (r *mutationResolver) DeleteTeam(ctx context.Context, input DeleteTeam) (*D
 func (r *mutationResolver) CreateTeam(ctx context.Context, input NewTeam) (*db.Team, error) {
 	userID, ok := GetUserID(ctx)
 	if !ok {
-		return &db.Team{}, nil
+		return &db.Team{}, &gqlerror.Error{
+			Message: "User ID is missing from context",
+			Extensions: map[string]interface{}{
+				"code": "0-401",
+			},
+		}
 	}
 	role, err := r.Repository.GetRoleForUserID(ctx, userID)
 	if err != nil {
 		log.WithError(err).Error("while creating team")
-		return &db.Team{}, nil
+		return &db.Team{}, err
 	}
 	if ConvertToRoleCode(role.Code) != RoleCodeAdmin {
 		return &db.Team{}, &gqlerror.Error{
@@ -120,7 +128,7 @@ func (r *mutationResolver) CreateTeam(ctx context.Context, input NewTeam) (*db.T
 	team, err := r.Repository.CreateTeam(ctx, db.CreateTeamParams{OrganizationID: input.OrganizationID, CreatedAt: createdAt, Name: input.Name})
 	if err != nil {
 		log.WithError(err).Error("while creating team")
-		return &db.Team{}, nil
+		return &db.Team{}, err
 	}
 	_, err = r.Repository.CreateTeamMember(ctx, db.CreateTeamMemberParams{
 		UserID:    userID,
@@ -130,7 +138,7 @@ func (r *mutationResolver) CreateTeam(ctx context.Context, input NewTeam) (*db.T
 	})
 	if err != nil {
 		log.WithError(err).Error("error while creating team member")
-		return &db.Team{}, nil
+		return &db.Team{}, err
 	}
 
 	return &team, nil

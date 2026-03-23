@@ -80,7 +80,7 @@ func (r *mutationResolver) NotificationMarkAllRead(ctx context.Context) (*Notifi
 	if err != nil {
 		return &NotificationMarkAllAsReadResult{}, err
 	}
-	return &NotificationMarkAllAsReadResult{Success: false}, nil
+	return &NotificationMarkAllAsReadResult{Success: true}, nil
 }
 
 func (r *notificationResolver) ID(ctx context.Context, obj *db.Notification) (uuid.UUID, error) {

@@ -8,8 +8,10 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
+	"github.com/jordanknott/taskcafe/internal/config"
 	"github.com/jordanknott/taskcafe/internal/db"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -304,17 +306,19 @@ func (h *TaskcafeHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				if !hasActiveUser {
-					json.NewEncoder(w).Encode(RegisteredUserResponseData{Setup: true})
+					// No active users yet — allow registration as part of initial setup
+				} else if !viper.GetBool(config.AllowPublicRegistration) {
+					log.Warn("public registration is disabled")
+					w.WriteHeader(http.StatusForbidden)
 					return
 				}
 			} else {
 				log.WithError(err).Error("error while retrieving invited user by email")
-				w.WriteHeader(http.StatusForbidden)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 		}
 	}
-	// TODO: accept user if public registration is enabled
 
 	createdAt := time.Now().UTC()
 	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(requestData.User.Password), 14)

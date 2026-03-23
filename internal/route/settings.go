@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/jordanknott/taskcafe/internal/config"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 type PublicSettingsResponse struct {
@@ -19,5 +21,8 @@ func (h *TaskcafeHandler) PublicSettings(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(PublicSettingsResponse{IsConfigured: userExists, AllowPublicRegistration: false})
+	json.NewEncoder(w).Encode(PublicSettingsResponse{
+		IsConfigured:            userExists,
+		AllowPublicRegistration: viper.GetBool(config.AllowPublicRegistration),
+	})
 }

@@ -22,12 +22,12 @@ import (
 func (r *mutationResolver) CreateUserAccount(ctx context.Context, input NewUserAccount) (*db.UserAccount, error) {
 	userID, ok := GetUserID(ctx)
 	if !ok {
-		return &db.UserAccount{}, nil
+		return &db.UserAccount{}, errors.New("user ID is missing from context")
 	}
 	role, err := r.Repository.GetRoleForUserID(ctx, userID)
 	if err != nil {
 		log.WithError(err).Error("while creating user account")
-		return &db.UserAccount{}, nil
+		return &db.UserAccount{}, err
 	}
 	if ConvertToRoleCode(role.Code) != RoleCodeAdmin {
 		return &db.UserAccount{}, &gqlerror.Error{
@@ -71,12 +71,12 @@ func (r *mutationResolver) CreateUserAccount(ctx context.Context, input NewUserA
 func (r *mutationResolver) DeleteUserAccount(ctx context.Context, input DeleteUserAccount) (*DeleteUserAccountPayload, error) {
 	userID, ok := GetUserID(ctx)
 	if !ok {
-		return &DeleteUserAccountPayload{Ok: false}, nil
+		return &DeleteUserAccountPayload{Ok: false}, errors.New("user ID is missing from context")
 	}
 	role, err := r.Repository.GetRoleForUserID(ctx, userID)
 	if err != nil {
 		log.WithError(err).Error("while deleting user account")
-		return &DeleteUserAccountPayload{}, nil
+		return &DeleteUserAccountPayload{}, err
 	}
 	if ConvertToRoleCode(role.Code) != RoleCodeAdmin {
 		return &DeleteUserAccountPayload{}, &gqlerror.Error{
@@ -149,12 +149,12 @@ func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input UpdateU
 func (r *mutationResolver) UpdateUserRole(ctx context.Context, input UpdateUserRole) (*UpdateUserRolePayload, error) {
 	userID, ok := GetUserID(ctx)
 	if !ok {
-		return &UpdateUserRolePayload{}, nil
+		return &UpdateUserRolePayload{}, errors.New("user ID is missing from context")
 	}
 	role, err := r.Repository.GetRoleForUserID(ctx, userID)
 	if err != nil {
 		log.WithError(err).Error("while updating user role")
-		return &UpdateUserRolePayload{}, nil
+		return &UpdateUserRolePayload{}, err
 	}
 	if ConvertToRoleCode(role.Code) != RoleCodeAdmin {
 		return &UpdateUserRolePayload{}, &gqlerror.Error{

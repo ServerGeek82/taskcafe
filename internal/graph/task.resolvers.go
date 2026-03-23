@@ -731,7 +731,7 @@ func (r *mutationResolver) CreateTaskDueDateNotifications(ctx context.Context, i
 	task, err := r.Repository.GetTaskByID(ctx, input[0].TaskID)
 	if err != nil {
 		log.WithError(err).Error("error while getting task by id")
-		return &CreateTaskDueDateNotificationsResult{}, nil
+		return &CreateTaskDueDateNotificationsResult{}, err
 	}
 	for _, in := range input {
 		remindAt := now.With(task.DueDate.Time).BeginningOfDay()
@@ -802,12 +802,12 @@ func (r *mutationResolver) UpdateTaskDueDateNotifications(ctx context.Context, i
 		task, err := r.Repository.GetTaskForDueDateReminder(ctx, in.ID)
 		if err != nil {
 			log.WithError(err).Error("error while getting task by id")
-			return &UpdateTaskDueDateNotificationsResult{}, nil
+			return &UpdateTaskDueDateNotificationsResult{}, err
 		}
 		current, err := r.Repository.GetDueDateReminderByID(ctx, in.ID)
 		if err != nil {
-			log.WithError(err).Error("error while getting task by id")
-			return &UpdateTaskDueDateNotificationsResult{}, nil
+			log.WithError(err).Error("error while getting due date reminder by id")
+			return &UpdateTaskDueDateNotificationsResult{}, err
 		}
 
 		remindAt := now.With(task.DueDate.Time).BeginningOfDay()
