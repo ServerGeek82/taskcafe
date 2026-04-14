@@ -9,7 +9,7 @@ import {
   getAfterDropDraggableList,
 } from 'shared/utils/draggables';
 import Button from 'shared/components/Button';
-import TextareaAutosize from 'react-autosize-textarea';
+import TextareaAutosize from 'shared/components/AutoSizeTextarea';
 import Control from 'react-select/src/components/Control';
 import useOnOutsideClick from 'shared/hooks/onOutsideClick';
 import { mixin } from 'shared/utils/styles';

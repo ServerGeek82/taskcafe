@@ -1,6 +1,6 @@
 import styled, { css, keyframes } from 'styled-components';
 import { mixin } from 'shared/utils/styles';
-import TextareaAutosize from 'react-autosize-textarea';
+import TextareaAutosize from 'shared/components/AutoSizeTextarea';
 import { CheckCircle, CheckSquareOutline, Clock, Bubble } from 'shared/icons';
 import TaskAssignee from 'shared/components/TaskAssignee';
 

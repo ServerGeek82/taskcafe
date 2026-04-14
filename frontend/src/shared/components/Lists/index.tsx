@@ -113,7 +113,7 @@ function shouldStatusFilter(task: Task, filter: TaskStatusFilter) {
         return completedAt.isSame(TODAY, 'd');
       case TaskSince.YESTERDAY:
         const YESTERDAY = REFERENCE.clone().subtract(1, 'day').startOf('day');
-        return completedAt.isSameOrAfter(YESTERDAY, 'd');
+        return completedAt.isSame(YESTERDAY, 'd');
       case TaskSince.ONE_WEEK:
         const ONE_WEEK = REFERENCE.clone().subtract(7, 'day').startOf('day');
         return completedAt.isSameOrAfter(ONE_WEEK, 'd');

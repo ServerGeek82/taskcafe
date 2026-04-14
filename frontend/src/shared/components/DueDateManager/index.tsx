@@ -7,7 +7,6 @@ import { colourStyles } from 'shared/components/Select';
 import produce from 'immer';
 import Select from 'react-select';
 import 'react-datepicker/dist/react-datepicker.css';
-import { getYear, getMonth } from 'date-fns';
 import { useForm, Controller } from 'react-hook-form';
 import NOOP from 'shared/utils/noop';
 import { Bell, Clock, Cross, Plus, Trash } from 'shared/icons';
@@ -253,7 +252,7 @@ const DueDateManager: React.FC<DueDateManagerProps> = ({ task, onDueDateChange, 
   const [endDate, setEndDate] = useState<Date | null>(currentDueDate);
   const [hasTime, enableTime] = useState(task.hasTime ?? false);
 
-  const years = _.range(2010, getYear(new Date()) + 10, 1);
+  const years = _.range(2010, new Date().getFullYear() + 10, 1);
   const months = [
     'January',
     'February',
@@ -342,7 +341,7 @@ const DueDateManager: React.FC<DueDateManagerProps> = ({ task, onDueDateChange, 
             <HeaderSelectLabel>
               {months[date.getMonth()]}
               <HeaderSelect
-                value={months[getMonth(date)]}
+                value={months[date.getMonth()]}
                 onChange={({ target: { value } }) => changeMonth(months.indexOf(value))}
               >
                 {months.map((option) => (
@@ -354,7 +353,7 @@ const DueDateManager: React.FC<DueDateManagerProps> = ({ task, onDueDateChange, 
             </HeaderSelectLabel>
             <HeaderSelectLabel>
               {date.getFullYear()}
-              <HeaderSelect value={getYear(date)} onChange={({ target: { value } }) => changeYear(parseInt(value, 10))}>
+              <HeaderSelect value={date.getFullYear()} onChange={({ target: { value } }) => changeYear(parseInt(value, 10))}>
                 {years.map((option) => (
                   <option key={option} value={option}>
                     {option}

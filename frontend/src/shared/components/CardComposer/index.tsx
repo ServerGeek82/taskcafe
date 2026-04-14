@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import useOnEscapeKeyDown from 'shared/hooks/onEscapeKeyDown';
 import useOnOutsideClick from 'shared/hooks/onOutsideClick';
 import { Cross } from 'shared/icons';
@@ -68,15 +67,6 @@ const CardComposer = ({ isOpen, onCreateCard, onClose }: Props) => {
       </ComposerControls>
     </CardComposerWrapper>
   );
-};
-
-CardComposer.propTypes = {
-  isOpen: PropTypes.bool,
-  onClose: PropTypes.func.isRequired,
-  onCreateCard: PropTypes.func.isRequired,
-};
-CardComposer.defaultProps = {
-  isOpen: true,
 };
 
 export default CardComposer;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import styled, { css } from 'styled-components/macro';
+import styled, { css } from 'styled-components';
 import theme from '../../../App/ThemeStyles';
 
 const InputWrapper = styled.div<{ width: string }>`

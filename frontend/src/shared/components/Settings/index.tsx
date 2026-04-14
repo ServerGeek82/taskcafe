@@ -257,6 +257,7 @@ type SettingsProps = {
 type TabProps = {
   tab: number;
   currentTab: number;
+  children?: React.ReactNode;
 };
 
 const Tab: React.FC<TabProps> = ({ tab, currentTab, children }) => {

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import TextareaAutosize from 'react-autosize-textarea/lib';
+import TextareaAutosize from 'shared/components/AutoSizeTextarea';
 import { mixin } from 'shared/utils/styles';
 import Member from '../Member';
 

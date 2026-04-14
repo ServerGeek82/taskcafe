@@ -15,6 +15,7 @@ import {
 type ActionButtonProps = {
   name: string;
   active?: boolean;
+  children?: React.ReactNode;
 };
 
 export const ActionButton: React.FC<ActionButtonProps> = ({ name, active, children }) => {
@@ -26,7 +27,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({ name, active, childr
   );
 };
 
-export const ButtonContainer: React.FC = ({ children }) => (
+export const ButtonContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ActionContainer>
     <ActionButtonContainer>{children}</ActionButtonContainer>
   </ActionContainer>
@@ -41,7 +42,7 @@ export const PrimaryLogo = () => {
   );
 };
 
-const Navbar: React.FC = ({ children }) => {
+const Navbar: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <Container>{children}</Container>;
 };
 

@@ -88,7 +88,13 @@ const Login = ({ onSubmit }: LoginProps) => {
               {errors.password && <FormError>{errors.password.message}</FormError>}
 
               <ActionButtons>
-                {showRegistration ? <RegisterButton variant="outline">Register</RegisterButton> : <div />}
+                {showRegistration ? (
+                  <RegisterButton variant="outline" onClick={() => history.push('/register')}>
+                    Register
+                  </RegisterButton>
+                ) : (
+                  <div />
+                )}
                 {!isComplete && <LoadingSpinner size="32px" thickness="2px" borderSize="48px" />}
                 <LoginButton type="submit" disabled={!isComplete}>
                   Login

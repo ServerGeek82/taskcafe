@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import styled, { css } from 'styled-components/macro';
+import styled, { css } from 'styled-components';
 import { mixin } from '../../utils/styles';
 
 const Text = styled.span<{ fontSize: string; justifyTextContent: string; hasIcon?: boolean }>`
@@ -139,6 +139,7 @@ type ButtonProps = {
   className?: string;
   onClick?: ($target: React.RefObject<HTMLButtonElement>) => void;
   justifyTextContent?: string;
+  children?: React.ReactNode;
 };
 
 const Button: React.FC<ButtonProps> = ({

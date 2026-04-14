@@ -61,6 +61,7 @@ type PopupProps = {
   padding?: boolean;
   borders?: boolean;
   diamondColor?: string;
+  children?: React.ReactNode;
 };
 
 type PopupContainerProps = {
@@ -71,6 +72,7 @@ type PopupContainerProps = {
   invertY: boolean;
   onClose: () => void;
   width?: string | number;
+  children?: React.ReactNode;
 };
 
 const PopupContainer: React.FC<PopupContainerProps> = ({
@@ -162,7 +164,7 @@ const defaultState = {
   options: null,
 };
 
-export const PopupProvider: React.FC = ({ children }) => {
+export const PopupProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentState, setState] = useState<PopupState>(defaultState);
   const show = (target: RefObject<HTMLElement>, content: JSX.Element, options?: PopupOptions) => {
     if (target && target.current) {
@@ -277,6 +279,7 @@ type Props = {
   onPrevious?: () => void | null;
   noHeader?: boolean | null;
   width?: string | number;
+  children?: React.ReactNode;
 };
 
 const PopupMenu: React.FC<Props> = ({ width, title, top, left, onClose, noHeader, children, onPrevious }) => {

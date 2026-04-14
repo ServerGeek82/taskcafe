@@ -42,6 +42,7 @@ import {
 type IconContainerProps = {
   disabled?: boolean;
   onClick?: ($target: React.RefObject<HTMLElement>) => void;
+  children?: React.ReactNode;
 };
 
 const IconContainer: React.FC<IconContainerProps> = ({ onClick, disabled = false, children }) => {

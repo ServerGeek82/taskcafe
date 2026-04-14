@@ -1,5 +1,5 @@
 import styled, { css } from 'styled-components';
-import TextareaAutosize from 'react-autosize-textarea';
+import TextareaAutosize from 'shared/components/AutoSizeTextarea';
 
 export const Container = styled.div`
   width: 272px;

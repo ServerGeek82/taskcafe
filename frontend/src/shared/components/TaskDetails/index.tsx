@@ -139,7 +139,7 @@ const StreamComment: React.FC<StreamCommentProps> = ({
                   onCreateComment={onUpdateComment}
                 />
               ) : (
-                <ReactMarkdown skipHtml plugins={[plugin]}>
+                <ReactMarkdown remarkPlugins={[plugin]}>
                   {DOMPurify.sanitize(comment.message, { FORBID_TAGS: ['style', 'img'] })}
                 </ReactMarkdown>
               )}

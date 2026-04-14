@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import Button from 'shared/components/Button';
-import TextareaAutosize from 'react-autosize-textarea';
 import { mixin } from 'shared/utils/styles';
 
 export const CancelIconWrapper = styled.div`

@@ -1,5 +1,5 @@
-import styled from 'styled-components/macro';
-import TextareaAutosize from 'react-autosize-textarea';
+import styled from 'styled-components';
+import TextareaAutosize from 'shared/components/AutoSizeTextarea';
 
 const Textarea = styled(TextareaAutosize)`
   border: none;
