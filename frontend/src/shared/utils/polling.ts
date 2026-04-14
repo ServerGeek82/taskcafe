@@ -1,5 +1,5 @@
 function resolve(interval: number) {
-  if (process.env.REACT_APP_ENABLE_POLLING === 'true') return interval;
+  if (import.meta.env.VITE_ENABLE_POLLING === 'true') return interval;
   return 0;
 }
 const polling = {

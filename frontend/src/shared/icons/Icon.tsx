@@ -1,5 +1,5 @@
 import React from 'react';
-import styled from 'styled-components/macro';
+import styled from 'styled-components';
 
 export type IconProps = {
   width: number | string;
@@ -14,6 +14,7 @@ type Props = {
   viewBox: string;
   className?: string;
   onClick?: () => void;
+  children?: React.ReactNode;
 };
 
 const Svg = styled.svg`
