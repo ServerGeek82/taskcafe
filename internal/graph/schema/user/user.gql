@@ -9,7 +9,9 @@ extend type Mutation {
   logoutUser(input: LogoutUser!): Boolean!
   clearProfileAvatar:  UserAccount!
 
-  updateUserPassword(input: UpdateUserPassword!): UpdateUserPasswordPayload!
+  updateUserPassword(input: UpdateUserPassword!):
+    UpdateUserPasswordPayload! @hasRole(roles: [ADMIN], level: ORG, type: ORG)
+  updateUserTimezone(input: UpdateUserTimezone!): UserAccount!
   updateUserRole(input: UpdateUserRole!):
    UpdateUserRolePayload! @hasRole(roles: [ADMIN], level: ORG, type: ORG)
   updateUserInfo(input: UpdateUserInfo!):
@@ -80,8 +82,12 @@ input NewUserAccount {
   roleCode: String!
 }
 
+input UpdateUserTimezone {
+  timezone: String!
+}
+
 input LogoutUser {
-  userID: UUID!
+  userID: UUID
 }
 
 input DeleteUserAccount {

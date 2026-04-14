@@ -22,14 +22,38 @@ func (r *organizationResolver) ID(ctx context.Context, obj *db.Organization) (uu
 }
 
 func (r *queryResolver) Organizations(ctx context.Context) ([]db.Organization, error) {
+	userID, ok := GetUserID(ctx)
+	if !ok {
+		return []db.Organization{}, NotAuthorized()
+	}
+	role, err := r.Repository.GetRoleForUserID(ctx, userID)
+	if err != nil || ConvertToRoleCode(role.Code) != RoleCodeAdmin {
+		return []db.Organization{}, NotAuthorized()
+	}
 	return r.Repository.GetAllOrganizations(ctx)
 }
 
 func (r *queryResolver) Users(ctx context.Context) ([]db.UserAccount, error) {
+	userID, ok := GetUserID(ctx)
+	if !ok {
+		return []db.UserAccount{}, NotAuthorized()
+	}
+	role, err := r.Repository.GetRoleForUserID(ctx, userID)
+	if err != nil || ConvertToRoleCode(role.Code) != RoleCodeAdmin {
+		return []db.UserAccount{}, NotAuthorized()
+	}
 	return r.Repository.GetAllUserAccounts(ctx)
 }
 
 func (r *queryResolver) InvitedUsers(ctx context.Context) ([]InvitedUserAccount, error) {
+	userID, ok := GetUserID(ctx)
+	if !ok {
+		return []InvitedUserAccount{}, NotAuthorized()
+	}
+	role, err := r.Repository.GetRoleForUserID(ctx, userID)
+	if err != nil || ConvertToRoleCode(role.Code) != RoleCodeAdmin {
+		return []InvitedUserAccount{}, NotAuthorized()
+	}
 	invitedMembers, err := r.Repository.GetInvitedUserAccounts(ctx)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -70,6 +94,11 @@ func (r *queryResolver) Projects(ctx context.Context, input *ProjectsFilter) ([]
 	logger.New(ctx).Info("fetching projects")
 
 	if input != nil {
+		// Verify the caller is a member of the requested team before listing its projects.
+		role, err := r.Repository.GetTeamRoleForUserID(ctx, db.GetTeamRoleForUserIDParams{UserID: userID, TeamID: *input.TeamID})
+		if err != nil || role.RoleCode == "" {
+			return []db.Project{}, NotAuthorized()
+		}
 		return r.Repository.GetAllProjectsForTeam(ctx, *input.TeamID)
 	}
 
@@ -265,8 +294,7 @@ func (r *queryResolver) Me(ctx context.Context) (*MePayload, error) {
 		return &MePayload{}, err
 	}
 	for _, project := range projects {
-		projectRoles = append(projectRoles, ProjectRole{ProjectID: project.ProjectID, RoleCode: ConvertToRoleCode("admin")})
-		// projectRoles = append(projectRoles, ProjectRole{ProjectID: project.ProjectID, RoleCode: ConvertToRoleCode(project.RoleCode)})
+		projectRoles = append(projectRoles, ProjectRole{ProjectID: project.ProjectID, RoleCode: ConvertToRoleCode(project.RoleCode)})
 	}
 	var teamRoles []TeamRole
 	teams, err := r.Repository.GetTeamRolesForUserID(ctx, userID)
@@ -274,8 +302,7 @@ func (r *queryResolver) Me(ctx context.Context) (*MePayload, error) {
 		return &MePayload{}, err
 	}
 	for _, team := range teams {
-		// teamRoles = append(teamRoles, TeamRole{TeamID: team.TeamID, RoleCode: ConvertToRoleCode(team.RoleCode)})
-		teamRoles = append(teamRoles, TeamRole{TeamID: team.TeamID, RoleCode: ConvertToRoleCode("admin")})
+		teamRoles = append(teamRoles, TeamRole{TeamID: team.TeamID, RoleCode: ConvertToRoleCode(team.RoleCode)})
 	}
 	return &MePayload{User: &user, TeamRoles: teamRoles, ProjectRoles: projectRoles}, err
 }

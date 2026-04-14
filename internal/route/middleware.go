@@ -3,6 +3,7 @@ package route
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jordanknott/taskcafe/internal/db"
@@ -47,6 +48,11 @@ func (m *AuthenticationMiddleware) Middleware(next http.Handler) http.Handler {
 		if err == nil {
 			token, err := m.repo.GetAuthTokenByID(r.Context(), authTokenID)
 			if err == nil {
+				if token.ExpiresAt.Before(time.Now()) {
+					log.WithField("tokenID", authTokenID).Warn("auth token is expired")
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
 				log.WithField("tokenID", authTokenID).WithField("userID", token.UserID).Info("setting auth token")
 				ctx = context.WithValue(ctx, utils.UserIDKey, token.UserID)
 			}

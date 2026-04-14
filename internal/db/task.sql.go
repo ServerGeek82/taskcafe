@@ -13,7 +13,7 @@ import (
 )
 
 const createDueDateReminder = `-- name: CreateDueDateReminder :one
-INSERT INTO task_due_date_reminder (task_id, period, duration, remind_at) VALUES ($1, $2, $3, $4) RETURNING due_date_reminder_id, task_id, period, duration, remind_at
+INSERT INTO task_due_date_reminder (task_id, period, duration, remind_at) VALUES ($1, $2, $3, $4) RETURNING due_date_reminder_id, task_id, period, duration, remind_at, notified_at
 `
 
 type CreateDueDateReminderParams struct {
@@ -37,6 +37,7 @@ func (q *Queries) CreateDueDateReminder(ctx context.Context, arg CreateDueDateRe
 		&i.Period,
 		&i.Duration,
 		&i.RemindAt,
+		&i.NotifiedAt,
 	)
 	return i, err
 }
@@ -442,7 +443,7 @@ func (q *Queries) GetCommentsForTaskID(ctx context.Context, taskID uuid.UUID) ([
 }
 
 const getDueDateReminderByID = `-- name: GetDueDateReminderByID :one
-SELECT due_date_reminder_id, task_id, period, duration, remind_at FROM task_due_date_reminder WHERE due_date_reminder_id = $1
+SELECT due_date_reminder_id, task_id, period, duration, remind_at, notified_at FROM task_due_date_reminder WHERE due_date_reminder_id = $1
 `
 
 func (q *Queries) GetDueDateReminderByID(ctx context.Context, dueDateReminderID uuid.UUID) (TaskDueDateReminder, error) {
@@ -454,12 +455,13 @@ func (q *Queries) GetDueDateReminderByID(ctx context.Context, dueDateReminderID 
 		&i.Period,
 		&i.Duration,
 		&i.RemindAt,
+		&i.NotifiedAt,
 	)
 	return i, err
 }
 
 const getDueDateRemindersForDuration = `-- name: GetDueDateRemindersForDuration :many
-SELECT due_date_reminder_id, task_id, period, duration, remind_at FROM task_due_date_reminder WHERE remind_at >= $1::timestamptz
+SELECT due_date_reminder_id, task_id, period, duration, remind_at, notified_at FROM task_due_date_reminder WHERE remind_at >= $1::timestamptz AND notified_at IS NULL
 `
 
 func (q *Queries) GetDueDateRemindersForDuration(ctx context.Context, startAt time.Time) ([]TaskDueDateReminder, error) {
@@ -477,6 +479,7 @@ func (q *Queries) GetDueDateRemindersForDuration(ctx context.Context, startAt ti
 			&i.Period,
 			&i.Duration,
 			&i.RemindAt,
+			&i.NotifiedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -491,8 +494,31 @@ func (q *Queries) GetDueDateRemindersForDuration(ctx context.Context, startAt ti
 	return items, nil
 }
 
+const setDueDateReminderNotified = `-- name: SetDueDateReminderNotified :one
+UPDATE task_due_date_reminder SET notified_at = $2 WHERE due_date_reminder_id = $1 RETURNING due_date_reminder_id, task_id, period, duration, remind_at, notified_at
+`
+
+type SetDueDateReminderNotifiedParams struct {
+	DueDateReminderID uuid.UUID    `json:"due_date_reminder_id"`
+	NotifiedAt        sql.NullTime `json:"notified_at"`
+}
+
+func (q *Queries) SetDueDateReminderNotified(ctx context.Context, arg SetDueDateReminderNotifiedParams) (TaskDueDateReminder, error) {
+	row := q.db.QueryRowContext(ctx, setDueDateReminderNotified, arg.DueDateReminderID, arg.NotifiedAt)
+	var i TaskDueDateReminder
+	err := row.Scan(
+		&i.DueDateReminderID,
+		&i.TaskID,
+		&i.Period,
+		&i.Duration,
+		&i.RemindAt,
+		&i.NotifiedAt,
+	)
+	return i, err
+}
+
 const getDueDateRemindersForTaskID = `-- name: GetDueDateRemindersForTaskID :many
-SELECT due_date_reminder_id, task_id, period, duration, remind_at FROM task_due_date_reminder WHERE task_id = $1
+SELECT due_date_reminder_id, task_id, period, duration, remind_at, notified_at FROM task_due_date_reminder WHERE task_id = $1
 `
 
 func (q *Queries) GetDueDateRemindersForTaskID(ctx context.Context, taskID uuid.UUID) ([]TaskDueDateReminder, error) {
@@ -510,6 +536,7 @@ func (q *Queries) GetDueDateRemindersForTaskID(ctx context.Context, taskID uuid.
 			&i.Period,
 			&i.Duration,
 			&i.RemindAt,
+			&i.NotifiedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -830,7 +857,7 @@ func (q *Queries) SetTaskComplete(ctx context.Context, arg SetTaskCompleteParams
 }
 
 const updateDueDateReminder = `-- name: UpdateDueDateReminder :one
-UPDATE task_due_date_reminder SET remind_at = $4, period = $2, duration = $3 WHERE due_date_reminder_id = $1 RETURNING due_date_reminder_id, task_id, period, duration, remind_at
+UPDATE task_due_date_reminder SET remind_at = $4, period = $2, duration = $3 WHERE due_date_reminder_id = $1 RETURNING due_date_reminder_id, task_id, period, duration, remind_at, notified_at
 `
 
 type UpdateDueDateReminderParams struct {
@@ -854,12 +881,13 @@ func (q *Queries) UpdateDueDateReminder(ctx context.Context, arg UpdateDueDateRe
 		&i.Period,
 		&i.Duration,
 		&i.RemindAt,
+		&i.NotifiedAt,
 	)
 	return i, err
 }
 
 const updateDueDateReminderRemindAt = `-- name: UpdateDueDateReminderRemindAt :one
-UPDATE task_due_date_reminder SET remind_at = $2 WHERE due_date_reminder_id = $1 RETURNING due_date_reminder_id, task_id, period, duration, remind_at
+UPDATE task_due_date_reminder SET remind_at = $2 WHERE due_date_reminder_id = $1 RETURNING due_date_reminder_id, task_id, period, duration, remind_at, notified_at
 `
 
 type UpdateDueDateReminderRemindAtParams struct {
@@ -876,6 +904,7 @@ func (q *Queries) UpdateDueDateReminderRemindAt(ctx context.Context, arg UpdateD
 		&i.Period,
 		&i.Duration,
 		&i.RemindAt,
+		&i.NotifiedAt,
 	)
 	return i, err
 }

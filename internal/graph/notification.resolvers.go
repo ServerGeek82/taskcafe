@@ -27,6 +27,9 @@ func (r *mutationResolver) NotificationToggleRead(ctx context.Context, input Not
 		log.WithError(err).Error("error while getting notified by ID")
 		return &Notified{}, err
 	}
+	if notified.UserID != userID {
+		return &Notified{}, errors.New("not authorized")
+	}
 	readAt := time.Now().UTC()
 	read := true
 	if notified.Read {

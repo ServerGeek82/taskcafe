@@ -1,6 +1,9 @@
 package db
 
 import (
+	"context"
+	"database/sql"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -16,4 +19,9 @@ func NewRepository(db *sqlx.DB) *Repository {
 		Queries: New(db.DB),
 		db:      db,
 	}
+}
+
+// BeginTxx starts a new database transaction and returns the underlying *sql.Tx.
+func (r *Repository) BeginTxx(ctx context.Context) (*sql.Tx, error) {
+	return r.db.BeginTx(ctx, nil)
 }

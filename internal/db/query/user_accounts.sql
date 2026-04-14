@@ -27,6 +27,12 @@ SELECT * FROM user_account
 UPDATE user_account SET bio = $2, full_name = $3, initials = $4, email = $5
   WHERE user_id = $1 RETURNING *;
 
+-- name: GetUserTimezone :one
+SELECT timezone FROM user_account WHERE user_id = $1;
+
+-- name: UpdateUserTimezone :one
+UPDATE user_account SET timezone = $2 WHERE user_id = $1 RETURNING *;
+
 -- name: DeleteUserAccountByID :exec
 DELETE FROM user_account WHERE user_id = $1;
 

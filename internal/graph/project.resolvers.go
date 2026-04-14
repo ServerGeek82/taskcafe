@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -152,7 +151,7 @@ func (r *mutationResolver) InviteProjectMembers(ctx context.Context, input Invit
 
 		}
 	}
-	return &InviteProjectMembersPayload{Ok: false, ProjectID: input.ProjectID, Members: members, InvitedMembers: invitedMembers}, nil
+	return &InviteProjectMembersPayload{Ok: true, ProjectID: input.ProjectID, Members: members, InvitedMembers: invitedMembers}, nil
 }
 
 func (r *mutationResolver) DeleteProjectMember(ctx context.Context, input DeleteProjectMember) (*DeleteProjectMemberPayload, error) {
@@ -364,7 +363,7 @@ func (r *projectResolver) PublicOn(ctx context.Context, obj *db.Project) (*time.
 }
 
 func (r *projectResolver) Permission(ctx context.Context, obj *db.Project) (*ProjectPermission, error) {
-	panic(fmt.Errorf("not implemented"))
+	return &ProjectPermission{}, nil
 }
 
 func (r *projectResolver) Labels(ctx context.Context, obj *db.Project) ([]db.ProjectLabel, error) {
@@ -407,7 +406,16 @@ func (r *queryResolver) FindProject(ctx context.Context, input FindProject) (*db
 	} else {
 		return &db.Project{}, errors.New("FindProject requires either ProjectID or ProjectShortID to be set")
 	}
-	if !isLoggedIn {
+	if isLoggedIn {
+		userID, _ := GetUserID(ctx)
+		_, memberErr := r.Repository.GetRoleForProjectMemberByUserID(ctx, db.GetRoleForProjectMemberByUserIDParams{UserID: userID, ProjectID: projectID})
+		if memberErr != nil {
+			isPublic, _ := IsProjectPublic(ctx, r.Repository, projectID)
+			if !isPublic {
+				return &db.Project{}, NotAuthorized()
+			}
+		}
+	} else {
 		isPublic, _ := IsProjectPublic(ctx, r.Repository, projectID)
 		if !isPublic {
 			return &db.Project{}, NotAuthorized()

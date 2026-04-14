@@ -153,6 +153,8 @@ func (h *TaskcafeHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Expires:  authExpiresAt,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
 	})
 	json.NewEncoder(w).Encode(LoginResponseData{Complete: true, UserID: authToken.UserID.String()})
 }
@@ -256,6 +258,8 @@ func (h *TaskcafeHandler) ConfirmUser(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		Expires:  authExpiresAt,
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
 	})
 	json.NewEncoder(w).Encode(LoginResponseData{Complete: true, UserID: authToken.UserID.String()})
 }

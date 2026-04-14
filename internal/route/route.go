@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
+	log "github.com/sirupsen/logrus"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
@@ -98,9 +99,13 @@ func NewRouter(dbConnection *sqlx.DB, redisClient *redis.Client, jobServer *mach
 	repository := db.NewRepository(dbConnection)
 	taskcafeHandler := TaskcafeHandler{*repository, appConfig}
 
+	// 20 requests per minute per IP on auth endpoints
+	authRateLimit := RateLimitMiddleware(20, time.Minute)
+	log.Info("auth rate limiter configured: 20 req/min per IP")
+
 	var imgServer = http.FileServer(http.Dir("./uploads/"))
 	r.Group(func(mux chi.Router) {
-		mux.Mount("/auth", authResource{}.Routes(taskcafeHandler))
+		mux.With(authRateLimit).Mount("/auth", authResource{}.Routes(taskcafeHandler))
 		mux.Handle("/__graphql", graph.NewPlaygroundHandler("/graphql"))
 		mux.Mount("/uploads/", http.StripPrefix("/uploads/", imgServer))
 		mux.Post("/auth/confirm", taskcafeHandler.ConfirmUser)

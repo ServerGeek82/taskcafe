@@ -273,13 +273,22 @@ func (r *mutationResolver) DuplicateTaskGroup(ctx context.Context, input Duplica
 }
 
 func (r *mutationResolver) SortTaskGroup(ctx context.Context, input SortTaskGroup) (*SortTaskGroupPayload, error) {
+	tx, err := r.Repository.BeginTxx(ctx)
+	if err != nil {
+		return &SortTaskGroupPayload{}, err
+	}
+	defer tx.Rollback()
+	txQueries := r.Repository.WithTx(tx)
 	tasks := []db.Task{}
 	for _, task := range input.Tasks {
-		t, err := r.Repository.UpdateTaskPosition(ctx, db.UpdateTaskPositionParams{TaskID: task.TaskID, Position: task.Position})
+		t, err := txQueries.UpdateTaskPosition(ctx, db.UpdateTaskPositionParams{TaskID: task.TaskID, Position: task.Position})
 		if err != nil {
 			return &SortTaskGroupPayload{}, err
 		}
 		tasks = append(tasks, t)
+	}
+	if err = tx.Commit(); err != nil {
+		return &SortTaskGroupPayload{}, err
 	}
 	return &SortTaskGroupPayload{Tasks: tasks, TaskGroupID: input.TaskGroupID}, nil
 }
@@ -548,8 +557,9 @@ func (r *mutationResolver) UpdateTaskDueDate(ctx context.Context, input UpdateTa
 			return &db.Task{}, err
 		}
 		if input.DueDate != nil {
+			userLoc := r.getUserLocation(ctx)
 			for _, rem := range reminders {
-				remindAt := now.With(*input.DueDate).BeginningOfDay()
+				remindAt := now.With(input.DueDate.In(userLoc)).BeginningOfDay().UTC()
 				if input.HasTime {
 					remindAt = *input.DueDate
 				}
@@ -723,6 +733,23 @@ func (r *mutationResolver) UnassignTask(ctx context.Context, input *UnassignTask
 	return &task, nil
 }
 
+// getUserLocation loads the caller's stored timezone, falling back to UTC on any error.
+func (r *mutationResolver) getUserLocation(ctx context.Context) *time.Location {
+	userID, ok := GetUserID(ctx)
+	if !ok {
+		return time.UTC
+	}
+	tz, err := r.Repository.GetUserTimezone(ctx, userID)
+	if err != nil || tz == "" {
+		return time.UTC
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}
+
 func (r *mutationResolver) CreateTaskDueDateNotifications(ctx context.Context, input []CreateTaskDueDateNotification) (*CreateTaskDueDateNotificationsResult, error) {
 	reminders := []DueDateNotification{}
 	if len(input) == 0 {
@@ -733,8 +760,9 @@ func (r *mutationResolver) CreateTaskDueDateNotifications(ctx context.Context, i
 		log.WithError(err).Error("error while getting task by id")
 		return &CreateTaskDueDateNotificationsResult{}, err
 	}
+	userLoc := r.getUserLocation(ctx)
 	for _, in := range input {
-		remindAt := now.With(task.DueDate.Time).BeginningOfDay()
+		remindAt := now.With(task.DueDate.Time.In(userLoc)).BeginningOfDay().UTC()
 		if task.HasTime {
 			remindAt = task.DueDate.Time
 		}
@@ -773,9 +801,9 @@ func (r *mutationResolver) CreateTaskDueDateNotifications(ctx context.Context, i
 				Value: in.TaskID.String(),
 			}},
 		}
-		r.Job.Server.SendTask(signature)
-		if err != nil {
-			return &CreateTaskDueDateNotificationsResult{}, err
+		if _, sendErr := r.Job.Server.SendTask(signature); sendErr != nil {
+			log.WithError(sendErr).Error("failed to enqueue due date notification job")
+			return &CreateTaskDueDateNotificationsResult{}, sendErr
 		}
 		duration := DueDateNotificationDuration(n.Duration)
 		if !duration.IsValid() {
@@ -810,7 +838,8 @@ func (r *mutationResolver) UpdateTaskDueDateNotifications(ctx context.Context, i
 			return &UpdateTaskDueDateNotificationsResult{}, err
 		}
 
-		remindAt := now.With(task.DueDate.Time).BeginningOfDay()
+		userLoc := r.getUserLocation(ctx)
+		remindAt := now.With(task.DueDate.Time.In(userLoc)).BeginningOfDay().UTC()
 		if task.HasTime {
 			remindAt = task.DueDate.Time
 		}
@@ -859,7 +888,10 @@ func (r *mutationResolver) UpdateTaskDueDateNotifications(ctx context.Context, i
 				Value: task.TaskID.String(),
 			}},
 		}
-		r.Job.Server.SendTask(signature)
+		if _, sendErr := r.Job.Server.SendTask(signature); sendErr != nil {
+			log.WithError(sendErr).Error("failed to enqueue due date notification job")
+			return &UpdateTaskDueDateNotificationsResult{}, sendErr
+		}
 		duration := DueDateNotificationDuration(n.Duration)
 		if !duration.IsValid() {
 			log.WithField("duration", n.Duration).Error("invalid duration found")
@@ -913,7 +945,29 @@ func (r *queryResolver) FindTask(ctx context.Context, input FindTask) (*db.Task,
 		return &db.Task{}, errors.New("FindTask requires either TaskID or TaskShortID to be set")
 	}
 	task, err := r.Repository.GetTaskByID(ctx, taskID)
-	return &task, err
+	if err != nil {
+		return &db.Task{}, err
+	}
+	taskGroup, err := r.Repository.GetTaskGroupByID(ctx, task.TaskGroupID)
+	if err != nil {
+		return &db.Task{}, err
+	}
+	userID, isLoggedIn := GetUserID(ctx)
+	if isLoggedIn {
+		_, memberErr := r.Repository.GetRoleForProjectMemberByUserID(ctx, db.GetRoleForProjectMemberByUserIDParams{UserID: userID, ProjectID: taskGroup.ProjectID})
+		if memberErr != nil {
+			isPublic, _ := IsProjectPublic(ctx, r.Repository, taskGroup.ProjectID)
+			if !isPublic {
+				return &db.Task{}, NotAuthorized()
+			}
+		}
+	} else {
+		isPublic, _ := IsProjectPublic(ctx, r.Repository, taskGroup.ProjectID)
+		if !isPublic {
+			return &db.Task{}, NotAuthorized()
+		}
+	}
+	return &task, nil
 }
 
 func (r *taskResolver) ID(ctx context.Context, obj *db.Task) (uuid.UUID, error) {

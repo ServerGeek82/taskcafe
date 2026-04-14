@@ -45,7 +45,31 @@ func (r *mutationResolver) CreateTeamMember(ctx context.Context, input CreateTea
 		}}, nil
 }
 
+func roleRank(code string) int {
+	switch code {
+	case "owner":
+		return 3
+	case "admin":
+		return 2
+	case "member":
+		return 1
+	default:
+		return 0
+	}
+}
+
 func (r *mutationResolver) UpdateTeamMemberRole(ctx context.Context, input UpdateTeamMemberRole) (*UpdateTeamMemberRolePayload, error) {
+	callerID, ok := GetUserID(ctx)
+	if !ok {
+		return &UpdateTeamMemberRolePayload{Ok: false}, fmt.Errorf("not authorized")
+	}
+	callerRole, err := r.Repository.GetRoleForTeamMember(ctx, db.GetRoleForTeamMemberParams{UserID: callerID, TeamID: input.TeamID})
+	if err != nil {
+		return &UpdateTeamMemberRolePayload{Ok: false}, fmt.Errorf("not authorized")
+	}
+	if roleRank(callerRole.RoleCode) <= roleRank(input.RoleCode.String()) {
+		return &UpdateTeamMemberRolePayload{Ok: false}, fmt.Errorf("cannot assign a role equal to or higher than your own")
+	}
 	user, err := r.Repository.GetUserAccountByID(ctx, input.UserID)
 	if err != nil {
 		logger.New(ctx).WithError(err).Error("get user account")
@@ -77,7 +101,23 @@ func (r *mutationResolver) UpdateTeamMemberRole(ctx context.Context, input Updat
 }
 
 func (r *mutationResolver) DeleteTeamMember(ctx context.Context, input DeleteTeamMember) (*DeleteTeamMemberPayload, error) {
-	err := r.Repository.DeleteTeamMember(ctx, db.DeleteTeamMemberParams{TeamID: input.TeamID, UserID: input.UserID})
+	targetRole, err := r.Repository.GetRoleForTeamMember(ctx, db.GetRoleForTeamMemberParams{UserID: input.UserID, TeamID: input.TeamID})
+	if err == nil && targetRole.RoleCode == "owner" {
+		members, membErr := r.Repository.GetTeamMembersForTeamID(ctx, input.TeamID)
+		if membErr == nil {
+			ownerCount := 0
+			for _, m := range members {
+				role, rErr := r.Repository.GetRoleForTeamMember(ctx, db.GetRoleForTeamMemberParams{UserID: m.UserID, TeamID: input.TeamID})
+				if rErr == nil && role.RoleCode == "owner" {
+					ownerCount++
+				}
+			}
+			if ownerCount <= 1 {
+				return &DeleteTeamMemberPayload{TeamID: input.TeamID, UserID: input.UserID}, fmt.Errorf("cannot remove the last owner of a team")
+			}
+		}
+	}
+	err = r.Repository.DeleteTeamMember(ctx, db.DeleteTeamMemberParams{TeamID: input.TeamID, UserID: input.UserID})
 	return &DeleteTeamMemberPayload{TeamID: input.TeamID, UserID: input.UserID}, err
 }
 
@@ -91,6 +131,9 @@ func (r *mutationResolver) DeleteTeam(ctx context.Context, input DeleteTeam) (*D
 	if err != nil {
 		logger.New(ctx).Error(err)
 		return &DeleteTeamPayload{Ok: false}, err
+	}
+	if len(projects) > 0 {
+		return &DeleteTeamPayload{Ok: false}, fmt.Errorf("cannot delete a team with %d existing project(s); delete or reassign projects first", len(projects))
 	}
 	err = r.Repository.DeleteTeamByID(ctx, input.TeamID)
 	if err != nil {
@@ -134,7 +177,7 @@ func (r *mutationResolver) CreateTeam(ctx context.Context, input NewTeam) (*db.T
 		UserID:    userID,
 		TeamID:    team.TeamID,
 		Addeddate: createdAt,
-		RoleCode:  "admin",
+		RoleCode:  "owner",
 	})
 	if err != nil {
 		log.WithError(err).Error("error while creating team member")
@@ -149,7 +192,7 @@ func (r *teamResolver) ID(ctx context.Context, obj *db.Team) (uuid.UUID, error) 
 }
 
 func (r *teamResolver) Permission(ctx context.Context, obj *db.Team) (*TeamPermission, error) {
-	panic(fmt.Errorf("not implemented"))
+	return &TeamPermission{}, nil
 }
 
 func (r *teamResolver) Members(ctx context.Context, obj *db.Team) ([]Member, error) {

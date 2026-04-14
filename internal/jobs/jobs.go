@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"strconv"
 	"time"
@@ -96,6 +97,11 @@ func (t *JobTasks) DueDateNotification(dueDateIDEncoded string, taskIDEncoded st
 		log.WithError(err).Error("while getting task by id")
 		return false, err
 	}
+	// Idempotency guard: if this reminder was already notified, skip.
+	if dueAt.NotifiedAt.Valid {
+		log.WithField("dueDateReminderID", dueDateID).Info("due date notification already sent; skipping duplicate")
+		return true, nil
+	}
 	task, err := t.Repository.GetTaskByID(ctx, taskID)
 	if err != nil {
 		log.WithError(err).Error("while getting task by id")
@@ -150,12 +156,24 @@ func (t *JobTasks) DueDateNotification(dueDateIDEncoded string, taskIDEncoded st
 			NotificationID: n.NotificationID.String(),
 		})
 		if err != nil {
-			panic(err)
+			log.WithError(err).Error("error marshalling notification payload")
+			return false, err
 		}
 
 		if err := t.MessageQueue.Publish(context.Background(), "notification-created", payload).Err(); err != nil {
-			panic(err)
+			log.WithError(err).Error("error publishing notification to redis")
+			return false, err
 		}
+	}
+
+	// Mark the reminder as notified so retries skip it.
+	notifiedAt := sql.NullTime{Valid: true, Time: time.Now().UTC()}
+	if _, err := t.Repository.SetDueDateReminderNotified(ctx, db.SetDueDateReminderNotifiedParams{
+		DueDateReminderID: dueDateID,
+		NotifiedAt:        notifiedAt,
+	}); err != nil {
+		log.WithError(err).Error("error marking due date reminder as notified")
+		// Non-fatal: the notifications were sent; worst case is a duplicate on re-run.
 	}
 
 	return true, nil

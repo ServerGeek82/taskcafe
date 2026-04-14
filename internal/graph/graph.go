@@ -230,6 +230,9 @@ func CompareRoleLevel(a string, b RoleLevel) bool {
 
 // ConvertToRoleCode converts a role code string to a RoleCode type
 func ConvertToRoleCode(r string) RoleCode {
+	if r == RoleCodeOwner.String() {
+		return RoleCodeOwner
+	}
 	if r == RoleCodeAdmin.String() {
 		return RoleCodeAdmin
 	}

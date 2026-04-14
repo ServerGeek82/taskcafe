@@ -145,5 +145,8 @@ SELECT * FROM task_due_date_reminder WHERE due_date_reminder_id = $1;
 DELETE FROM task_due_date_reminder WHERE due_date_reminder_id = $1;
 
 -- name: GetDueDateRemindersForDuration :many
-SELECT * FROM task_due_date_reminder WHERE remind_at >= @start_at::timestamptz;
+SELECT * FROM task_due_date_reminder WHERE remind_at >= @start_at::timestamptz AND notified_at IS NULL;
+
+-- name: SetDueDateReminderNotified :one
+UPDATE task_due_date_reminder SET notified_at = $2 WHERE due_date_reminder_id = $1 RETURNING *;
 

@@ -188,11 +188,12 @@ type TaskComment struct {
 }
 
 type TaskDueDateReminder struct {
-	DueDateReminderID uuid.UUID `json:"due_date_reminder_id"`
-	TaskID            uuid.UUID `json:"task_id"`
-	Period            int32     `json:"period"`
-	Duration          string    `json:"duration"`
-	RemindAt          time.Time `json:"remind_at"`
+	DueDateReminderID uuid.UUID    `json:"due_date_reminder_id"`
+	TaskID            uuid.UUID    `json:"task_id"`
+	Period            int32        `json:"period"`
+	Duration          string       `json:"duration"`
+	RemindAt          time.Time    `json:"remind_at"`
+	NotifiedAt        sql.NullTime `json:"notified_at"`
 }
 
 type TaskDueDateReminderDuration struct {
@@ -249,6 +250,7 @@ type UserAccount struct {
 	RoleCode         string         `json:"role_code"`
 	Bio              string         `json:"bio"`
 	Active           bool           `json:"active"`
+	Timezone         string         `json:"timezone"`
 }
 
 type UserAccountConfirmToken struct {

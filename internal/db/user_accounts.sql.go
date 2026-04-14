@@ -96,6 +96,7 @@ func (q *Queries) CreateUserAccount(ctx context.Context, arg CreateUserAccountPa
 		&i.RoleCode,
 		&i.Bio,
 		&i.Active,
+		&i.Timezone,
 	)
 	return i, err
 }
@@ -199,6 +200,7 @@ func (q *Queries) GetAllUserAccounts(ctx context.Context) ([]UserAccount, error)
 			&i.RoleCode,
 			&i.Bio,
 			&i.Active,
+		&i.Timezone,
 		); err != nil {
 			return nil, err
 		}
@@ -311,6 +313,7 @@ func (q *Queries) GetMemberData(ctx context.Context, projectID uuid.UUID) ([]Use
 			&i.RoleCode,
 			&i.Bio,
 			&i.Active,
+		&i.Timezone,
 		); err != nil {
 			return nil, err
 		}
@@ -394,6 +397,7 @@ func (q *Queries) GetUserAccountByEmail(ctx context.Context, email string) (User
 		&i.RoleCode,
 		&i.Bio,
 		&i.Active,
+		&i.Timezone,
 	)
 	return i, err
 }
@@ -418,6 +422,7 @@ func (q *Queries) GetUserAccountByID(ctx context.Context, userID uuid.UUID) (Use
 		&i.RoleCode,
 		&i.Bio,
 		&i.Active,
+		&i.Timezone,
 	)
 	return i, err
 }
@@ -442,6 +447,7 @@ func (q *Queries) GetUserAccountByUsername(ctx context.Context, username string)
 		&i.RoleCode,
 		&i.Bio,
 		&i.Active,
+		&i.Timezone,
 	)
 	return i, err
 }
@@ -490,6 +496,7 @@ func (q *Queries) SetFirstUserActive(ctx context.Context) (UserAccount, error) {
 		&i.RoleCode,
 		&i.Bio,
 		&i.Active,
+		&i.Timezone,
 	)
 	return i, err
 }
@@ -514,6 +521,7 @@ func (q *Queries) SetUserActiveByEmail(ctx context.Context, email string) (UserA
 		&i.RoleCode,
 		&i.Bio,
 		&i.Active,
+		&i.Timezone,
 	)
 	return i, err
 }
@@ -543,6 +551,7 @@ func (q *Queries) SetUserPassword(ctx context.Context, arg SetUserPasswordParams
 		&i.RoleCode,
 		&i.Bio,
 		&i.Active,
+		&i.Timezone,
 	)
 	return i, err
 }
@@ -582,6 +591,7 @@ func (q *Queries) UpdateUserAccountInfo(ctx context.Context, arg UpdateUserAccou
 		&i.RoleCode,
 		&i.Bio,
 		&i.Active,
+		&i.Timezone,
 	)
 	return i, err
 }
@@ -612,6 +622,7 @@ func (q *Queries) UpdateUserAccountProfileAvatarURL(ctx context.Context, arg Upd
 		&i.RoleCode,
 		&i.Bio,
 		&i.Active,
+		&i.Timezone,
 	)
 	return i, err
 }
@@ -641,6 +652,48 @@ func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) 
 		&i.RoleCode,
 		&i.Bio,
 		&i.Active,
+		&i.Timezone,
+	)
+	return i, err
+}
+
+const getUserTimezone = `-- name: GetUserTimezone :one
+SELECT timezone FROM user_account WHERE user_id = $1
+`
+
+func (q *Queries) GetUserTimezone(ctx context.Context, userID uuid.UUID) (string, error) {
+	row := q.db.QueryRowContext(ctx, getUserTimezone, userID)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}
+
+const updateUserTimezone = `-- name: UpdateUserTimezone :one
+UPDATE user_account SET timezone = $2 WHERE user_id = $1 RETURNING user_id, created_at, email, username, password_hash, profile_bg_color, full_name, initials, profile_avatar_url, role_code, bio, active, timezone
+`
+
+type UpdateUserTimezoneParams struct {
+	UserID   uuid.UUID `json:"user_id"`
+	Timezone string    `json:"timezone"`
+}
+
+func (q *Queries) UpdateUserTimezone(ctx context.Context, arg UpdateUserTimezoneParams) (UserAccount, error) {
+	row := q.db.QueryRowContext(ctx, updateUserTimezone, arg.UserID, arg.Timezone)
+	var i UserAccount
+	err := row.Scan(
+		&i.UserID,
+		&i.CreatedAt,
+		&i.Email,
+		&i.Username,
+		&i.PasswordHash,
+		&i.ProfileBgColor,
+		&i.FullName,
+		&i.Initials,
+		&i.ProfileAvatarUrl,
+		&i.RoleCode,
+		&i.Bio,
+		&i.Active,
+		&i.Timezone,
 	)
 	return i, err
 }

@@ -118,7 +118,11 @@ func (r *mutationResolver) DeleteInvitedUserAccount(ctx context.Context, input D
 }
 
 func (r *mutationResolver) LogoutUser(ctx context.Context, input LogoutUser) (bool, error) {
-	err := r.Repository.DeleteAuthTokenByUserID(ctx, input.UserID)
+	userID, ok := GetUserID(ctx)
+	if !ok {
+		return false, errors.New("not authorized")
+	}
+	err := r.Repository.DeleteAuthTokenByUserID(ctx, userID)
 	return true, err
 }
 
@@ -135,11 +139,15 @@ func (r *mutationResolver) ClearProfileAvatar(ctx context.Context) (*db.UserAcco
 }
 
 func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input UpdateUserPassword) (*UpdateUserPasswordPayload, error) {
+	userID, ok := GetUserID(ctx)
+	if !ok {
+		return &UpdateUserPasswordPayload{}, errors.New("not authorized")
+	}
 	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(input.Password), 14)
 	if err != nil {
 		return &UpdateUserPasswordPayload{}, err
 	}
-	user, err := r.Repository.SetUserPassword(ctx, db.SetUserPasswordParams{UserID: input.UserID, PasswordHash: string(hashedPwd)})
+	user, err := r.Repository.SetUserPassword(ctx, db.SetUserPasswordParams{UserID: userID, PasswordHash: string(hashedPwd)})
 	if err != nil {
 		return &UpdateUserPasswordPayload{}, err
 	}
@@ -171,6 +179,21 @@ func (r *mutationResolver) UpdateUserRole(ctx context.Context, input UpdateUserR
 	return &UpdateUserRolePayload{User: &user}, nil
 }
 
+func (r *mutationResolver) UpdateUserTimezone(ctx context.Context, input UpdateUserTimezone) (*db.UserAccount, error) {
+	userID, ok := GetUserID(ctx)
+	if !ok {
+		return &db.UserAccount{}, errors.New("not authorized")
+	}
+	if _, err := time.LoadLocation(input.Timezone); err != nil {
+		return &db.UserAccount{}, errors.New("invalid timezone: " + input.Timezone)
+	}
+	user, err := r.Repository.UpdateUserTimezone(ctx, db.UpdateUserTimezoneParams{UserID: userID, Timezone: input.Timezone})
+	if err != nil {
+		return &db.UserAccount{}, err
+	}
+	return &user, nil
+}
+
 func (r *mutationResolver) UpdateUserInfo(ctx context.Context, input UpdateUserInfo) (*UpdateUserInfoPayload, error) {
 	userID, ok := GetUserID(ctx)
 	if !ok {
@@ -183,6 +206,9 @@ func (r *mutationResolver) UpdateUserInfo(ctx context.Context, input UpdateUserI
 }
 
 func (r *queryResolver) SearchMembers(ctx context.Context, input MemberSearchFilter) ([]MemberSearchResult, error) {
+	if _, ok := GetUserID(ctx); !ok {
+		return []MemberSearchResult{}, NotAuthorized()
+	}
 	availableMembers, err := r.Repository.GetMemberData(ctx, *input.ProjectID)
 	if err != nil {
 		logger.New(ctx).WithField("projectID", input.ProjectID).WithError(err).Error("error while getting member data")

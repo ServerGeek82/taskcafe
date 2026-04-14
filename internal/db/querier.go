@@ -86,6 +86,7 @@ type Querier interface {
 	GetDueDateReminderByID(ctx context.Context, dueDateReminderID uuid.UUID) (TaskDueDateReminder, error)
 	GetDueDateRemindersForDuration(ctx context.Context, startAt time.Time) ([]TaskDueDateReminder, error)
 	GetDueDateRemindersForTaskID(ctx context.Context, taskID uuid.UUID) ([]TaskDueDateReminder, error)
+	GetUserTimezone(ctx context.Context, userID uuid.UUID) (string, error)
 	GetInvitedMembersForProjectID(ctx context.Context, projectID uuid.UUID) ([]GetInvitedMembersForProjectIDRow, error)
 	GetInvitedUserAccounts(ctx context.Context) ([]UserAccountInvited, error)
 	GetInvitedUserByEmail(ctx context.Context, email string) (UserAccountInvited, error)
@@ -161,6 +162,7 @@ type Querier interface {
 	SetTaskGroupName(ctx context.Context, arg SetTaskGroupNameParams) (TaskGroup, error)
 	SetUserActiveByEmail(ctx context.Context, email string) (UserAccount, error)
 	SetUserPassword(ctx context.Context, arg SetUserPasswordParams) (UserAccount, error)
+	SetDueDateReminderNotified(ctx context.Context, arg SetDueDateReminderNotifiedParams) (TaskDueDateReminder, error)
 	UpdateDueDateReminder(ctx context.Context, arg UpdateDueDateReminderParams) (TaskDueDateReminder, error)
 	UpdateDueDateReminderRemindAt(ctx context.Context, arg UpdateDueDateReminderRemindAtParams) (TaskDueDateReminder, error)
 	UpdateProjectLabel(ctx context.Context, arg UpdateProjectLabelParams) (ProjectLabel, error)
@@ -183,6 +185,7 @@ type Querier interface {
 	UpdateUserAccountInfo(ctx context.Context, arg UpdateUserAccountInfoParams) (UserAccount, error)
 	UpdateUserAccountProfileAvatarURL(ctx context.Context, arg UpdateUserAccountProfileAvatarURLParams) (UserAccount, error)
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) (UserAccount, error)
+	UpdateUserTimezone(ctx context.Context, arg UpdateUserTimezoneParams) (UserAccount, error)
 }
 
 var _ Querier = (*Queries)(nil)
