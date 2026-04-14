@@ -16,7 +16,7 @@ import {
   GetTeamDocument,
 } from 'shared/generated/graphql';
 import { UserPlus, Checkmark } from 'shared/icons';
-import styled, { css } from 'styled-components/macro';
+import styled, { css } from 'styled-components';
 import { usePopup, Popup } from 'shared/components/PopupMenu';
 import TaskAssignee from 'shared/components/TaskAssignee';
 import Member from 'shared/components/Member';

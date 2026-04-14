@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components/macro';
+import styled from 'styled-components';
 import GlobalTopNavbar from 'App/TopNavbar';
 import updateApolloCache from 'shared/utils/cache';
 import { Route, Switch, useRouteMatch, Redirect, useParams, useHistory } from 'react-router';
