@@ -211,12 +211,9 @@ const AdminRoute = () => {
     },
   });
   if (data && user) {
-    /*
-TODO: add permision check
     if (user.roles.org !== 'admin') {
       return <Redirect to="/" />;
     }
-     */
     return (
       <>
         <GlobalTopNavbar projectID={null} onSaveProjectName={NOOP} name={null} />
@@ -224,8 +221,7 @@ TODO: add permision check
           initialTab={0}
           users={data.users}
           invitedUsers={data.invitedUsers}
-          // canInviteUser={user.roles.org === 'admin'} TODO: add permision check
-          canInviteUser
+          canInviteUser={user.roles.org === 'admin'}
           onInviteUser={NOOP}
           onUpdateUserPassword={() => {
             hidePopup();
