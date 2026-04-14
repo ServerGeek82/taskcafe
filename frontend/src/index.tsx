@@ -1,57 +1,50 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import { ApolloClient } from '@apollo/client';
-import { ApolloProvider } from '@apollo/client/react';
+import React, { useEffect, useState } from 'react';
+import Confirm from 'shared/components/Confirm';
+import { useHistory, useLocation } from 'react-router';
+import * as QueryString from 'query-string';
+import { useCurrentUser } from 'App/context';
+import { Container, LoginWrapper } from './Styles';
 
-import { enableMapSet } from 'immer';
-import dayjs from 'dayjs';
-import updateLocale from 'dayjs/plugin/updateLocale';
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
-import isBetween from 'dayjs/plugin/isBetween';
-import weekday from 'dayjs/plugin/weekday';
-import duration from 'dayjs/plugin/duration';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import log from 'loglevel';
-import remote from 'loglevel-plugin-remote';
-import cache from './App/cache';
-import App from './App';
+const UsersConfirm = () => {
+  const history = useHistory();
+  const location = useLocation();
+  const params = QueryString.parse(location.search);
+  const [hasFailed, setFailed] = useState(false);
+  const { setUser } = useCurrentUser();
+  const isSetup = params.setup === 'true';
+  const hasToken = params.confirmToken !== undefined;
+  useEffect(() => {
+    if (!isSetup && !hasToken) {
+      setFailed(true);
+      return;
+    }
+    fetch('/auth/confirm', {
+      method: 'POST',
+      body: JSON.stringify({
+        confirmToken: hasToken ? params.confirmToken : '',
+      }),
+    })
+      .then(async (x) => {
+        if (x.status === 200) {
+          const response = await x.json();
+          const { userID } = response;
+          setUser(userID);
+          history.push('/');
+        } else {
+          setFailed(true);
+        }
+      })
+      .catch(() => {
+        setFailed(true);
+      });
+  }, []);
+  return (
+    <Container>
+      <LoginWrapper>
+        <Confirm hasConfirmToken={isSetup || hasToken} hasFailed={hasFailed} />
+      </LoginWrapper>
+    </Container>
+  );
+};
 
-if (process.env.REACT_APP_NODE_ENV === 'production') {
-  remote.apply(log, { format: remote.json });
-  switch (process.env.REACT_APP_LOG_LEVEL) {
-    case 'info':
-      log.setLevel(log.levels.INFO);
-      break;
-    case 'debug':
-      log.setLevel(log.levels.DEBUG);
-      break;
-    default:
-      log.setLevel(log.levels.ERROR);
-  }
-}
-
-enableMapSet();
-
-dayjs.extend(isSameOrAfter);
-dayjs.extend(weekday);
-dayjs.extend(isBetween);
-dayjs.extend(customParseFormat);
-dayjs.extend(updateLocale);
-dayjs.extend(duration);
-dayjs.extend(relativeTime);
-dayjs.updateLocale('en', {
-  week: {
-    dow: 1, // First day of week is Monday
-    doy: 7, // First week of year must contain 1 January (7 + 1 - 1)
-  },
-});
-
-const client = new ApolloClient({ uri: '/graphql', cache });
-
-ReactDOM.render(
-  <ApolloProvider client={client}>
-    <App />
-  </ApolloProvider>,
-  document.getElementById('root'),
-);
+export default UsersConfirm;
