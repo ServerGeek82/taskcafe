@@ -1,10 +1,10 @@
 version: "3"
 services:
   postgres:
-    image: postgres:12.3-alpine
+    image: postgres:15-alpine
     restart: always
     networks:
-      - taskcafe-test
+      - taskcafe-net
     environment:
       POSTGRES_USER: taskcafe
       POSTGRES_PASSWORD: taskcafe_test
@@ -12,23 +12,29 @@ services:
     volumes:
       - taskcafe-postgres:/var/lib/postgresql/data
     ports:
-      - 8865:5432
+      - "8865:5432"
+
   mailhog:
     image: mailhog/mailhog:latest
     restart: always
     ports:
-      - 1025:1025
-      - 8025:8025
+      - "1025:1025"
+      - "8025:8025"
+
   redis:
-    image: redis:6.2
+    image: redis:7-alpine
     restart: always
     ports:
-      - 6379:6379
+      - "6379:6379"
+    volumes:
+      - taskcafe-redis:/data
 
 volumes:
   taskcafe-postgres:
     external: false
+  taskcafe-redis:
+    external: false
 
 networks:
-  taskcafe-test:
+  taskcafe-net:
     driver: bridge

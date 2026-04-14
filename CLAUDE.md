@@ -87,3 +87,89 @@ Three code generators are used — always regenerate after modifying their input
 ## Commit Conventions
 
 Conventional commits enforced via commitizen pre-commit hook. Format: `<type>: <description>` where type is `feat`, `fix`, `chore`, `docs`, etc.
+
+---
+
+## Security Fix Initiative (April 2026)
+
+A multi-agent audit identified critical security and logic bugs. Fixes applied in three waves. Status tracked below.
+
+### Wave 1 — Schema ✅ COMPLETE
+| Fix | File | Status |
+|-----|------|--------|
+| C2: Add `@hasRole` to `updateUserPassword` mutation | `internal/graph/schema/user/user.gql` | ✅ Done |
+
+**Manual gate required:** After Wave 1, run `go run cmd/mage/main.go backend:schema` to regenerate `generated.go`. This was not run automatically (Go not in shell PATH during fix session).
+
+### Wave 2 — Backend ✅ COMPLETE
+| Fix | File | Finding | Status |
+|-----|------|---------|--------|
+| C1: Token expiry check in middleware | `internal/route/middleware.go` | Expired tokens were accepted forever | ✅ Done |
+| H2: Cookie `Secure`+`SameSite` flags | `internal/route/auth.go` | CSRF/MITM risk | ✅ Done |
+| M4: `ConvertToRoleCode` — add `"owner"` case | `internal/graph/graph.go` | "owner" was falling through to Observer | ✅ Done |
+| H5: Redis subscription panic → recover+restart | `internal/graph/resolver.go` | Malformed message crashed server | ✅ Done |
+| H1: Auth guard on `users`/`organizations`/`invitedUsers` queries | `internal/graph/schema.resolvers.go` | Unauthenticated user enumeration | ✅ Done |
+| C6: `Me` query — use real roles not hardcoded `"admin"` | `internal/graph/schema.resolvers.go` | All users appeared as admin to frontend | ✅ Done |
+| C3: `logoutUser` — use context userID not input | `internal/graph/user.resolvers.go` | Any user could log out any user | ✅ Done |
+| C2: `updateUserPassword` — use context userID not input | `internal/graph/user.resolvers.go` | Any user could change any password | ✅ Done |
+| C4: `findProject` — auth check for logged-in users | `internal/graph/project.resolvers.go` | Authenticated users could read any private project | ✅ Done |
+| M7: `Project.Permission` — replace panic with stub | `internal/graph/project.resolvers.go` | Field crashed server with 500 | ✅ Done |
+| M8: `inviteProjectMembers` — fix `Ok: false` on success | `internal/graph/project.resolvers.go` | Success path always returned failure | ✅ Done |
+| C5: `findTask` — add project membership check | `internal/graph/task.resolvers.go` | Any user could read any task by ID | ✅ Done |
+| H4: `SendTask()` — capture and propagate error | `internal/graph/task.resolvers.go` | Redis enqueue failures silently swallowed | ✅ Done |
+| H6: `notificationToggleRead` — ownership check | `internal/graph/notification.resolvers.go` | IDOR: user could toggle others' notifications | ✅ Done |
+| C8: `updateTeamMemberRole` — privilege hierarchy check | `internal/graph/team.resolvers.go` | Admin could promote to owner | ✅ Done |
+| C7: `deleteTeamMember` — last-owner guard | `internal/graph/team.resolvers.go` | Teams could be left ownerless | ✅ Done |
+| M3: `deleteTeam` — block if projects exist | `internal/graph/team.resolvers.go` | Silent cascade-delete of all team projects | ✅ Done |
+| M2: `createTeam` — creator role `"owner"` not `"admin"` | `internal/graph/team.resolvers.go` | Creators never had owner role | ✅ Done |
+| Team.Permission — replace panic with stub | `internal/graph/team.resolvers.go` | Field crashed server with 500 | ✅ Done |
+
+### Wave 3 — Frontend ✅ COMPLETE
+| Fix | File | Finding | Status |
+|-----|------|---------|--------|
+| M1: Admin route guard — uncomment role check | `frontend/src/Admin/index.tsx` | Non-admins could access admin UI | ✅ Done |
+
+### Additional Fixes (Session 2) ✅ COMPLETE
+| Fix | File(s) | Finding | Status |
+|-----|---------|---------|--------|
+| H3: Rate limiting on `/auth/login` | `internal/route/ratelimit.go` (new), `route.go` | Brute force possible; 20 req/min per IP, no external dep | ✅ Done |
+| M9: `sortTaskGroup` — wrap in DB transaction | `internal/graph/task.resolvers.go`, `internal/db/repository.go` | Partial sort left board inconsistent on failure | ✅ Done |
+| M10: DnD optimistic update rollback | `frontend/src/Projects/Project/Board/index.tsx` | UI diverged from server on mutation failure | ✅ Done |
+
+### Session 3 Fixes ✅ COMPLETE
+| Fix | File(s) | Finding | Status |
+|-----|---------|---------|--------|
+| M6: Job idempotency | `migrations/0073_*`, `internal/db/task.sql.go`, `internal/db/models.go`, `internal/jobs/jobs.go` | Duplicate notifications on worker crash/retry | ✅ Done |
+| M5: Timezone-aware due-date reminders | `migrations/0074_*`, `internal/db/user_accounts.sql.go`, `internal/db/models.go`, `internal/graph/task.resolvers.go`, `internal/graph/user.resolvers.go`, `internal/graph/schema/user/user.gql` | Reminders fired at wrong local time | ✅ Done |
+
+### All Findings Resolved ✅
+All 22 findings from the April 2026 audit have been fixed across 3 sessions.
+
+### Infrastructure Fixes (Session 3) ✅ COMPLETE
+| Fix | File | Issue |
+|-----|------|-------|
+| Add Redis service + worker service | `docker-compose.yml` | Redis missing; Machinery worker never started; due-date jobs would never fire |
+| Fix all missing env vars | `docker-compose.yml` | DB credentials, Redis URIs, security secret all absent |
+| Update PostgreSQL 12.3 → 15 | `docker-compose.yml`, `docker-compose.dev.yml` | 12.3 is EOL |
+| Update Redis 6.2 → 7 | `docker-compose.yml`, `docker-compose.dev.yml` | Minor version bump |
+| Update Go 1.14.5 → 1.22 | `Dockerfile` | Go 1.14.5 is EOL; security patches missing |
+| Update Node 18 → 20 | `Dockerfile` | Node 20 is current LTS |
+| Add `backend:schema` to Dockerfile build | `Dockerfile` | Schema changes were not regenerated during Docker build |
+| Add `ca-certificates` + `tzdata` to runtime image | `Dockerfile` | tzdata required for M5 timezone fix (`time.LoadLocation`) |
+| Declare `go 1.22` in module | `go.mod` | Was set to `go 1.13` |
+| Fix `docker-compose.migrate.yml` | `docker-compose.migrate.yml` | Referenced undefined network; clarified usage |
+| Rename network to `taskcafe-net` | All compose files | Consistent naming |
+
+### Cleanup Fixes (Final Session)
+| Fix | File | Issue |
+|-----|------|-------|
+| H7: `projects(teamID)` — team membership check | `internal/graph/schema.resolvers.go` | Any authenticated user could list all projects in any team |
+| `searchMembers` — add auth guard | `internal/graph/user.resolvers.go` | Unauthenticated access to member search |
+| `canInviteUser` hardcoded `true` | `frontend/src/Admin/index.tsx` | Invite button always shown regardless of role |
+| `querier.go` interface — add 3 missing methods | `internal/db/querier.go` | Compile-time interface check would fail at build |
+
+### One Remaining Manual Step (needs Go in PATH)
+New install — all 74 migrations run automatically on first boot via `TASKCAFE_MIGRATE=true`. No manual migration needed.
+
+**Schema regeneration** — `go run cmd/mage/main.go backend:schema`
+Required because `user.gql` was changed twice (added `@hasRole` to `updateUserPassword`; added `updateUserTimezone` mutation). The Dockerfile now runs this automatically during `docker build`, so a fresh Docker build handles it. For local development without Docker, run this manually before `backend:build`.

@@ -1,6 +1,6 @@
 module github.com/jordanknott/taskcafe
 
-go 1.13
+go 1.22
 
 require (
 	github.com/99designs/gqlgen v0.13.0

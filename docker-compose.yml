@@ -7,32 +7,76 @@ services:
       - "3333:3333"
     depends_on:
       - postgres
+      - redis
     networks:
-      - taskcafe-test
+      - taskcafe-net
     environment:
       TASKCAFE_DATABASE_HOST: postgres
+      TASKCAFE_DATABASE_USER: taskcafe
+      TASKCAFE_DATABASE_PASSWORD: taskcafe_secret
+      TASKCAFE_DATABASE_NAME: taskcafe
+      TASKCAFE_DATABASE_PORT: "5432"
+      TASKCAFE_DATABASE_SSLMODE: disable
       TASKCAFE_MIGRATE: "true"
+      TASKCAFE_MESSAGE_QUEUE: "redis:6379"
+      TASKCAFE_JOB_ENABLED: "true"
+      TASKCAFE_JOB_BROKER: "redis://redis:6379"
+      TASKCAFE_JOB_STORE: "redis://redis:6379"
+      TASKCAFE_JOB_QUEUE_NAME: taskcafe_tasks
+      # Set a stable secret so sessions survive restarts. Override in production.
+      TASKCAFE_SECURITY_SECRET: "changeme-replace-with-a-long-random-string"
     volumes:
       - taskcafe-uploads:/root/uploads
-      
+
+  worker:
+    image: taskcafe/taskcafe:latest
+    # build: .
+    command: ["./taskcafe", "worker"]
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - taskcafe-net
+    environment:
+      TASKCAFE_DATABASE_HOST: postgres
+      TASKCAFE_DATABASE_USER: taskcafe
+      TASKCAFE_DATABASE_PASSWORD: taskcafe_secret
+      TASKCAFE_DATABASE_NAME: taskcafe
+      TASKCAFE_DATABASE_PORT: "5432"
+      TASKCAFE_DATABASE_SSLMODE: disable
+      TASKCAFE_JOB_ENABLED: "true"
+      TASKCAFE_JOB_BROKER: "redis://redis:6379"
+      TASKCAFE_JOB_STORE: "redis://redis:6379"
+      TASKCAFE_JOB_QUEUE_NAME: taskcafe_tasks
+
   postgres:
-    image: postgres:12.3-alpine
+    image: postgres:15-alpine
     restart: always
     networks:
-      - taskcafe-test
+      - taskcafe-net
     environment:
       POSTGRES_USER: taskcafe
-      POSTGRES_PASSWORD: taskcafe_test
+      POSTGRES_PASSWORD: taskcafe_secret
       POSTGRES_DB: taskcafe
     volumes:
       - taskcafe-postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - taskcafe-net
+    volumes:
+      - taskcafe-redis:/data
 
 volumes:
   taskcafe-postgres:
     external: false
   taskcafe-uploads:
     external: false
+  taskcafe-redis:
+    external: false
 
 networks:
-  taskcafe-test:
+  taskcafe-net:
     driver: bridge

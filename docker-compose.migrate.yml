@@ -1,12 +1,20 @@
 version: '3'
 
+# Run standalone database migrations against an existing postgres instance.
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.migrate.yml run migrate
 services:
   migrate:
-    build: .
-    entrypoint: ./taskcafe migrate
-    volumes:
-      - ./migrations:/root/migrations
+    image: taskcafe/taskcafe:latest
+    # build: .
+    command: ["./taskcafe", "migrate"]
     depends_on:
       - postgres
     networks:
-      - taskcafe-test
+      - taskcafe-net
+    environment:
+      TASKCAFE_DATABASE_HOST: postgres
+      TASKCAFE_DATABASE_USER: taskcafe
+      TASKCAFE_DATABASE_PASSWORD: taskcafe_secret
+      TASKCAFE_DATABASE_NAME: taskcafe
+      TASKCAFE_DATABASE_PORT: "5432"
+      TASKCAFE_DATABASE_SSLMODE: disable
