@@ -29,7 +29,7 @@ type ValidateTokenResponse = {
   userID: string;
 };
 
-const UserRequiredRoute: React.FC<any> = ({ children }) => {
+const UserRequiredRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useCurrentUser();
   const location = useLocation();
   if (user) {
@@ -52,14 +52,20 @@ const Routes: React.FC = () => {
     fetch('/auth/validate', {
       method: 'POST',
       credentials: 'include',
-    }).then(async (x) => {
-      const response: ValidateTokenResponse = await x.json();
-      const { valid, userID } = response;
-      if (valid) {
-        setUser(userID);
-      }
-      setLoading(false);
-    });
+    })
+      .then(async (x) => {
+        if (x.ok) {
+          const response: ValidateTokenResponse = await x.json();
+          const { valid, userID } = response;
+          if (valid) {
+            setUser(userID);
+          }
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
   }, []);
   if (loading) return null;
   return (
@@ -67,19 +73,22 @@ const Routes: React.FC = () => {
       <Route exact path="/login" component={Login} />
       <Route exact path="/register" component={Register} />
       <Route exact path="/confirm" component={Confirm} />
-      <Switch>
+      <Route>
         <MainContent>
-          <Route path="/p/:projectID" component={Project} />
-
-          <UserRequiredRoute>
-            <Route exact path="/" component={Projects} />
-            <Route path="/teams/:teamID" component={Teams} />
-            <Route path="/profile" component={Profile} />
-            <Route path="/admin" component={Admin} />
-            <Route path="/tasks" component={MyTasks} />
-          </UserRequiredRoute>
+          <Switch>
+            <Route path="/p/:projectID" component={Project} />
+            <UserRequiredRoute>
+              <Switch>
+                <Route exact path="/" component={Projects} />
+                <Route path="/teams/:teamID" component={Teams} />
+                <Route path="/profile" component={Profile} />
+                <Route path="/admin" component={Admin} />
+                <Route path="/tasks" component={MyTasks} />
+              </Switch>
+            </UserRequiredRoute>
+          </Switch>
         </MainContent>
-      </Switch>
+      </Route>
     </Switch>
   );
 };
