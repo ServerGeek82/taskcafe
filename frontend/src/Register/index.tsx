@@ -37,16 +37,20 @@ const UsersRegister = () => {
                 }),
               })
                 .then(async (x) => {
-                  const response = await x.json();
-                  const { setup } = response;
-                  if (setup) {
-                    history.replace(`/confirm?confirmToken=xxxx`);
-                    isRedirected = true;
-                  } else if (params.confirmToken) {
-                    history.replace(`/confirm?confirmToken=${params.confirmToken}`);
-                    isRedirected = true;
+                  if (x.ok) {
+                    const response = await x.json();
+                    const { setup } = response;
+                    if (setup) {
+                      history.replace('/confirm?setup=true');
+                      isRedirected = true;
+                    } else if (params.confirmToken) {
+                      history.replace(`/confirm?confirmToken=${params.confirmToken}`);
+                      isRedirected = true;
+                    } else {
+                      setRegistered(true);
+                    }
                   } else {
-                    setRegistered(true);
+                    toast('Registration failed. You may not have permission to register.');
                   }
                 })
                 .catch((e) => {
