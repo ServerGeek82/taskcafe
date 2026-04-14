@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import styled, { css } from 'styled-components/macro';
+import styled, { css } from 'styled-components';
 import dayjs from 'dayjs';
 import { CheckCircleOutline, CheckCircle, Cross, Briefcase, ChevronRight } from 'shared/icons';
 import { mixin } from 'shared/utils/styles';

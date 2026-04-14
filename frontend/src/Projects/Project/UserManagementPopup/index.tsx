@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import AsyncSelect from 'react-select/async';
-import { useApolloClient } from '@apollo/react-hooks';
+import { useApolloClient } from '@apollo/client';
 import { colourStyles } from 'shared/components/Select';
 import { Popup } from 'shared/components/PopupMenu';
 import OptionValue from './OptionValue';

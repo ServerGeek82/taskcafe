@@ -135,7 +135,7 @@ const Project = () => {
         (cache) =>
           produce(cache, (draftCache) => {
             draftCache.findProject.invitedMembers = cache.findProject.invitedMembers.filter(
-              (m) => m.email !== response.data?.deleteInvitedProjectMember.invitedMember.email ?? '',
+              (m) => m.email !== (response.data?.deleteInvitedProjectMember.invitedMember.email ?? ''),
             );
           }),
         { projectID: data ? data.findProject.id : '' },

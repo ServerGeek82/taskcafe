@@ -388,26 +388,24 @@ const Details: React.FC<DetailsProps> = ({
     pollInterval: polling.TASK_DETAILS,
     fetchPolicy: 'cache-and-network',
   });
-  const [setTaskComplete] = useSetTaskCompleteMutation();
-  const [updateTaskDueDate] = useUpdateTaskDueDateMutation({
+  const refetchOnSettled = {
     onCompleted: () => {
       refetch();
       refreshCache();
     },
-  });
-  const [assignTask] = useAssignTaskMutation({
-    onCompleted: () => {
+    onError: () => {
       refetch();
-      refreshCache();
+    },
+  };
+  const [setTaskComplete] = useSetTaskCompleteMutation(refetchOnSettled);
+  const [updateTaskDueDate] = useUpdateTaskDueDateMutation(refetchOnSettled);
+  const [assignTask] = useAssignTaskMutation(refetchOnSettled);
+  const [unassignTask] = useUnassignTaskMutation(refetchOnSettled);
+  const [updateTaskComment] = useUpdateTaskCommentMutation({
+    onError: () => {
+      refetch();
     },
   });
-  const [unassignTask] = useUnassignTaskMutation({
-    onCompleted: () => {
-      refetch();
-      refreshCache();
-    },
-  });
-  const [updateTaskComment] = useUpdateTaskCommentMutation();
   const [editableComment, setEditableComment] = useState<null | string>(null);
   const isLoading = true;
   return (

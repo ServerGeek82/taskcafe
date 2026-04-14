@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import styled from 'styled-components/macro';
+import styled from 'styled-components';
 import GlobalTopNavbar from 'App/TopNavbar';
 import Settings from 'shared/components/Settings';
 import {

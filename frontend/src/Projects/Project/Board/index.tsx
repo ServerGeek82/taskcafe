@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import { useApolloClient } from '@apollo/client';
 import updateApolloCache from 'shared/utils/cache';
-import styled, { css } from 'styled-components/macro';
+import styled, { css } from 'styled-components';
 import { Bolt, ToggleOn, Tags, CheckCircle, Sort, Filter } from 'shared/icons';
 import { usePopup, Popup } from 'shared/components/PopupMenu';
 import { useRouteMatch, useHistory } from 'react-router-dom';
@@ -162,6 +163,7 @@ const ProjectActionText = styled.span`
 type ProjectActionProps = {
   onClick?: (target: React.RefObject<HTMLElement>) => void;
   disabled?: boolean;
+  children?: React.ReactNode;
 };
 
 const ProjectAction: React.FC<ProjectActionProps> = ({ onClick, disabled = false, children }) => {
@@ -266,7 +268,18 @@ const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectID, onCardLabelClick
   const { showPopup, hidePopup } = usePopup();
   const taskLabelsRef = useRef<Array<TaskLabel>>([]);
   const [quickCardEditor, setQuickCardEditor] = useState(initialQuickCardEditorState);
-  const [updateTaskGroupLocation] = useUpdateTaskGroupLocationMutation({});
+  const apolloClient = useApolloClient();
+
+  const revertBoardCache = useCallback(() => {
+    apolloClient.refetchQueries({ include: [FindProjectDocument] });
+  }, [apolloClient]);
+
+  const [updateTaskGroupLocation] = useUpdateTaskGroupLocationMutation({
+    onError: () => {
+      toast.error('Failed to move list. Reverting changes.');
+      revertBoardCache();
+    },
+  });
   const [taskStatusFilter, setTaskStatusFilter] = useState(initTaskStatusFilter);
   const [taskMetaFilters, setTaskMetaFilters] = useState(initTaskMetaFilters);
   const [taskSorting, setTaskSorting] = useState(initTaskSorting);
@@ -274,6 +287,9 @@ const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectID, onCardLabelClick
   const [sortTaskGroup] = useSortTaskGroupMutation({
     onCompleted: () => {
       toast('List was sorted');
+    },
+    onError: () => {
+      refetch();
     },
   });
   const [deleteTaskGroup] = useDeleteTaskGroupMutation({
@@ -329,7 +345,7 @@ const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectID, onCardLabelClick
   });
 
   const [updateTaskGroupName] = useUpdateTaskGroupNameMutation({});
-  const { loading, data } = useFindProjectQuery({
+  const { loading, data, refetch } = useFindProjectQuery({
     variables: { projectID },
   });
   const [deleteTaskGroupTasks] = useDeleteTaskGroupTasksMutation({
@@ -368,6 +384,10 @@ const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectID, onCardLabelClick
   const [updateTaskDueDate] = useUpdateTaskDueDateMutation();
   const [setTaskComplete] = useSetTaskCompleteMutation();
   const [updateTaskLocation] = useUpdateTaskLocationMutation({
+    onError: () => {
+      toast.error('Failed to move task. Reverting changes.');
+      revertBoardCache();
+    },
     update: (client, newTask) => {
       updateApolloCache<FindProjectQuery>(
         client,

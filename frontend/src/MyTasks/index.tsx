@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import styled, { css } from 'styled-components/macro';
+import styled, { css } from 'styled-components';
 import GlobalTopNavbar from 'App/TopNavbar';
 import Details from 'Projects/Project/Details';
 import {
@@ -129,6 +129,7 @@ const ProjectActionText = styled.span`
 type ProjectActionProps = {
   onClick?: (target: React.RefObject<HTMLElement>) => void;
   disabled?: boolean;
+  children?: React.ReactNode;
 };
 
 const ProjectAction: React.FC<ProjectActionProps> = ({ onClick, disabled = false, children }) => {

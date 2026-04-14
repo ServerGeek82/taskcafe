@@ -107,7 +107,7 @@ const ControlStatus: React.FC<ControlStatusProps> = ({ filter, onChangeTaskStatu
       </ActionItem>
       <ActionItem>
         {currentFilter.status === TaskStatus.COMPLETE && <ActiveIcon width={12} height={12} />}
-        <ActionTitle>Compelete Tasks</ActionTitle>
+        <ActionTitle>Complete Tasks</ActionTitle>
         <ActionExtraMenuContainer>
           <ActionExtraMenu>
             <ActionExtraMenuItem onClick={() => handleCompleteClick(TaskSince.ALL)}>
